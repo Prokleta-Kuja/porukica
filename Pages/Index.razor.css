@@ -1,0 +1,9 @@
+.bd-clipboard {
+    position: relative;
+}
+
+.btn-clipboard {
+    position: absolute;
+    top: .65rem;
+    right: .65rem;
+}

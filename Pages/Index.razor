@@ -1,0 +1,65 @@
+@page "/"
+
+<div class="row my-4">
+    <div class="col">
+        <button class="w-100 btn @(TextForm ? "btn-success" : "btn-outline-success")" type="button" @onclick="()=>TextForm = true">Text</button>
+    </div>
+    <div class="col">
+        <button class="w-100 btn @(TextForm ? "btn-outline-danger" : "btn-danger")" type="button" @onclick="()=>TextForm = false">Files</button>
+    </div>
+</div>
+
+@if(TextForm)
+{
+    <textarea row="2" placeholder="Text to share" class="form-control mb-2"></textarea>
+}
+else
+{
+    var isUploading = UploadProgress > -1;
+    var progressClass = isUploading ? "" : "d-none";
+    var inputClass = isUploading ? "d-none" : "d-block";
+    inputClass += " mb-2 form-control form-control-lg";
+
+    <div class="progress mb-2 @progressClass" style="height: 40px;">
+        <div class="progress-bar" role="progressbar" style="width: @UploadProgress.ToString()%;">@UploadProgress %</div>
+    </div>
+    <InputFile class=@inputClass OnChange=FileSelected />
+}
+
+<div class="input-group mb-3">
+    <div role="group" class="btn-group">
+        <button type="button" class="btn btn-outline-success" @onclick="()=>Post(TimeSpan.FromMinutes(15))">15 min</button>
+        <button type="button" class="btn btn-outline-warning" @onclick="()=>Post(TimeSpan.FromHours(1))">1 hr</button>
+        <button type="button" class="btn btn-outline-danger" style="border-top-right-radius: 0;border-bottom-right-radius: 0;" @onclick="()=>Post(TimeSpan.FromDays(1))">1 day</button>
+    </div>
+    <input type=password placeholder="Shared secret" @bind=Secret class="form-control">
+</div>
+
+@if(TextForm)
+{
+    @foreach (var text in Database.Texts)
+    {
+        <div class="card bg-light mb-2">
+            <div class="bd-clipboard">
+                <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary">Copy</button>
+            </div>
+            <pre>
+                <code>@text.Value</code>
+            </pre>
+        </div>
+    }
+}
+else
+{
+    @foreach (var file in Database.Files)
+    {
+        <div class="card bg-light mb-2">
+            <div class="bd-clipboard">
+                <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary">Copy</button>
+            </div>
+            <pre>
+                <code>@file.Value</code>
+            </pre>
+        </div>
+    }
+}
