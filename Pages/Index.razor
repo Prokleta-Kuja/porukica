@@ -5,13 +5,13 @@
         <button class="w-100 btn @(TextForm ? "btn-success" : "btn-outline-success")" type="button" @onclick="()=>TextForm = true">Text</button>
     </div>
     <div class="col">
-        <button class="w-100 btn @(TextForm ? "btn-outline-danger" : "btn-danger")" type="button" @onclick="()=>TextForm = false">Files</button>
+        <button class="w-100 btn @(TextForm ? "btn-outline-info" : "btn-info")" type="button" @onclick="()=>TextForm = false">Files</button>
     </div>
 </div>
 
 @if(TextForm)
 {
-    <textarea row="2" placeholder="Text to share" class="form-control mb-2"></textarea>
+    <textarea row="2" placeholder="Text to share" class="form-control mb-2" @bind=Text></textarea>
 }
 else
 {
@@ -23,6 +23,7 @@ else
     <div class="progress mb-2 @progressClass" style="height: 40px;">
         <div class="progress-bar" role="progressbar" style="width: @UploadProgress.ToString()%;">@UploadProgress %</div>
     </div>
+    <button type=button class="btn btn-danger w-100 mb-2 @progressClass" @onclick=CancelUpload>Cancel</button>
     <InputFile class=@inputClass OnChange=FileSelected />
 }
 
@@ -44,7 +45,7 @@ else
                 <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary">Copy</button>
             </div>
             <pre>
-                <code>@text.Value</code>
+                <code>@text.Value.Value</code>
             </pre>
         </div>
     }
@@ -58,7 +59,7 @@ else
                 <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary">Copy</button>
             </div>
             <pre>
-                <code>@file.Value</code>
+                <code>@file.Value.Value</code>
             </pre>
         </div>
     }

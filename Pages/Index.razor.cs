@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
@@ -14,11 +13,12 @@ namespace porukica.Pages
     public partial class Index
     {
         [Inject] ISchedulerFactory Q { get; set; }
-        bool TextForm { get; set; }
+        bool TextForm { get; set; } = true;
         string Secret { get; set; }
         string Text { get; set; }
         IBrowserFile File { get; set; }
         double UploadProgress { get; set; } = -1;
+        CancellationTokenSource cts;
         private async Task Post(TimeSpan ts)
         {
             var scheduler = await Q.GetScheduler();
@@ -52,11 +52,13 @@ namespace porukica.Pages
                 int bytesRead;
                 var totalRead = 0d;
                 var totalSize = File.Size;
+                cts = new CancellationTokenSource();
 
                 var buffer = new byte[C.UPLOAD_BUFFER_SIZE];
-                while ((bytesRead = await remote.ReadAsync(buffer, 0, buffer.Length)) != 0) // Cancellation token here
+                var memory = new Memory<byte>(buffer);
+                while ((bytesRead = await remote.ReadAsync(memory, cts.Token)) != 0)
                 {
-                    await local.WriteAsync(buffer, 0, bytesRead); // Cancellation token here
+                    await local.WriteAsync(memory, cts.Token);
                     totalRead += bytesRead;
                     var complete = totalRead / totalSize;
                     var completePercent = Math.Floor(complete * 100);
@@ -81,18 +83,24 @@ namespace porukica.Pages
             }
 
         }
+        private void CancelUpload()
+        {
+            cts.Cancel();
+            UploadProgress = -1;
+            // TODO: find which file is not in files list, and delete it's folder
+        }
+
         private void FileSelected(InputFileChangeEventArgs e)
         {
-            var files = e.GetMultipleFiles(1);
-            File = files.FirstOrDefault();
+            File = e.File;
         }
-        private JobDataMap CreateJobData(string key)
+        private static JobDataMap CreateJobData(string key)
         {
             var kv = new Dictionary<string, string> { { "Id", key } };
 
             return new JobDataMap(kv);
         }
-        private DirectoryInfo CreateFileDir(string key)
+        private static DirectoryInfo CreateFileDir(string key)
         {
             var uploads = new DirectoryInfo(C.UPLOAD_DIR);
             var fdi = uploads.CreateSubdirectory(key);
