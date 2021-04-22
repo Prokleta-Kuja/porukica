@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 using porukica.Jobs;
 using Quartz;
 
@@ -13,6 +14,7 @@ namespace porukica.Pages
     public partial class Index
     {
         [Inject] ISchedulerFactory Q { get; set; }
+        [Inject] IJSRuntime JS { get; set; }
         bool TextForm { get; set; } = true;
         string Secret { get; set; }
         string Text { get; set; }
@@ -83,6 +85,7 @@ namespace porukica.Pages
             }
 
         }
+        private async Task CopyTextToClipboard(string text) => await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
         private void CancelUpload()
         {
             cts.Cancel();

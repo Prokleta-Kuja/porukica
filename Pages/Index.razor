@@ -37,14 +37,14 @@ else
 
 @if(TextForm)
 {
-    for (int i = Database.Texts - 1; i >= 0 ; i--)
+    for (int i = Database.Texts.Count - 1; i >= 0 ; i--)
     {
         var text = Database.Texts.ElementAt(i);
         if(string.IsNullOrWhiteSpace(text.Value.Secret) || text.Value.Secret.Equals(Secret, StringComparison.InvariantCultureIgnoreCase))
         {
             <div class="card bg-light mb-2">
                 <div class="bd-clipboard">
-                    <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary">Copy</button>
+                    <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary" @onclick="()=>CopyTextToClipboard(text.Value.Value)">Copy</button>
                 </div>
                 <code class="p-3 text-body">
                     <pre>@text.Value.Value</pre>
