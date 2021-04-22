@@ -11,7 +11,7 @@
 
 @if(TextForm)
 {
-    <textarea row="2" placeholder="Text to share" class="form-control mb-2" @bind=Text></textarea>
+    <textarea row="2" placeholder="Text to share" class="form-control font-monospace mb-2" @bind=Text></textarea>
 }
 else
 {
@@ -28,39 +28,42 @@ else
 }
 
 <div class="input-group mb-3">
-    <div role="group" class="btn-group">
-        <button type="button" class="btn btn-outline-success" @onclick="()=>Post(TimeSpan.FromMinutes(15))">15 min</button>
+        <button type="button" class="btn btn-outline-success" @onclick="()=>Post(TimeSpan.FromMinutes(1))">15 min</button>
         <button type="button" class="btn btn-outline-warning" @onclick="()=>Post(TimeSpan.FromHours(1))">1 hr</button>
-        <button type="button" class="btn btn-outline-danger" style="border-top-right-radius: 0;border-bottom-right-radius: 0;" @onclick="()=>Post(TimeSpan.FromDays(1))">1 day</button>
-    </div>
+        <button type="button" class="btn btn-outline-danger" @onclick="()=>Post(TimeSpan.FromDays(1))">1 day</button>
     <input type=password placeholder="Shared secret" @bind=Secret class="form-control">
+    <button class="btn btn-primary" @onclick=StateHasChanged>Refresh</button>
 </div>
 
 @if(TextForm)
 {
-    @foreach (var text in Database.Texts)
+    for (int i = Database.Texts - 1; i >= 0 ; i--)
     {
-        <div class="card bg-light mb-2">
-            <div class="bd-clipboard">
-                <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary">Copy</button>
+        var text = Database.Texts.ElementAt(i);
+        if(string.IsNullOrWhiteSpace(text.Value.Secret) || text.Value.Secret.Equals(Secret, StringComparison.InvariantCultureIgnoreCase))
+        {
+            <div class="card bg-light mb-2">
+                <div class="bd-clipboard">
+                    <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary">Copy</button>
+                </div>
+                <code class="p-3 text-body">
+                    <pre>@text.Value.Value</pre>
+                </code>
             </div>
-            <pre>
-                <code>@text.Value.Value</code>
-            </pre>
-        </div>
+        }
     }
 }
 else
 {
-    @foreach (var file in Database.Files)
+    @foreach (var file in Database.Files.Where(f => f.Value.Secret == Secret))
     {
         <div class="card bg-light mb-2">
             <div class="bd-clipboard">
                 <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary">Copy</button>
             </div>
-            <pre>
-                <code>@file.Value.Value</code>
-            </pre>
+            <code>
+                <pre>@file.Value.Value</pre>
+            </code>
         </div>
     }
 }
