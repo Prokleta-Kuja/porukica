@@ -10,7 +10,7 @@
 *.userosscache
 *.sln.docstates
 appsettings.*.json
-uploads/
+wwwroot/uploads/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

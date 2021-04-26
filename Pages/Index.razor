@@ -9,30 +9,38 @@
     </div>
 </div>
 
-@if(TextForm)
-{
-    <textarea row="2" placeholder="Text to share" class="form-control font-monospace mb-2" @bind=Text></textarea>
-}
-else
-{
-    var isUploading = UploadProgress > -1;
-    var progressClass = isUploading ? "" : "d-none";
-    var inputClass = isUploading ? "d-none" : "d-block";
-    inputClass += " mb-2 form-control form-control-lg";
+<div class="row">
+    <div class="col">
+        <textarea @ref=TextInput row="2" placeholder="Text to share" class="form-control font-monospace mb-2" @bind=Text></textarea>
+        @if(!TextForm)
+        {
+            var isUploading = UploadProgress > -1;
+            var progressClass = isUploading ? "" : "d-none";
+            var inputClass = isUploading ? "d-none" : "d-block";
+            inputClass += " mb-2 form-control form-control-lg";
 
-    <div class="progress mb-2 @progressClass" style="height: 40px;">
-        <div class="progress-bar" role="progressbar" style="width: @UploadProgress.ToString()%;">@UploadProgress %</div>
+            <div class="progress mb-2 @progressClass" style="height: 40px;">
+                <div class="progress-bar" role="progressbar" style="width: @UploadProgress.ToString()%;">@UploadProgress %</div>
+            </div>
+            <button type=button class="btn btn-danger w-100 mb-2 @progressClass" @onclick=CancelUpload>Cancel</button>
+            <InputFile class=@inputClass OnChange=FileSelected />
+        }
+        
+        <button type="button" class="btn btn-primary w-100" @onclick=StateHasChanged>Refresh</button>
     </div>
-    <button type=button class="btn btn-danger w-100 mb-2 @progressClass" @onclick=CancelUpload>Cancel</button>
-    <InputFile class=@inputClass OnChange=FileSelected />
-}
-
-<div class="input-group mb-3">
-        <button type="button" class="btn btn-outline-success" @onclick="()=>Post(TimeSpan.FromMinutes(1))">15 min</button>
-        <button type="button" class="btn btn-outline-warning" @onclick="()=>Post(TimeSpan.FromHours(1))">1 hr</button>
-        <button type="button" class="btn btn-outline-danger" @onclick="()=>Post(TimeSpan.FromDays(1))">1 day</button>
-    <input type=password placeholder="Shared secret" @bind=Secret class="form-control">
-    <button class="btn btn-primary" @onclick=StateHasChanged>Refresh</button>
+    <div class="col-3">
+        <div class="mb-3">
+            <input type=password placeholder="Shared secret" @bind=Secret class="form-control">
+        </div>
+        <div class="mb-3">
+            <input type=number min=1 placeholder="N" @bind=Time class="form-control">
+        </div>
+        <div class="btn-group w-100 mb-3">
+            <button type="button" class="btn btn-outline-success" @onclick="()=>Post(Models.TimeType.Minutes)">Minutes</button>
+            <button type="button" class="btn btn-outline-warning" @onclick="()=>Post(Models.TimeType.Hours)">Hours</button>
+            <button type="button" class="btn btn-outline-danger" @onclick="()=>Post(Models.TimeType.Days)">Days</button>
+        </div>
+    </div>
 </div>
 
 @if(TextForm)
@@ -40,14 +48,17 @@ else
     for (int i = Database.Texts.Count - 1; i >= 0 ; i--)
     {
         var text = Database.Texts.ElementAt(i);
-        if(string.IsNullOrWhiteSpace(text.Value.Secret) || text.Value.Secret.Equals(Secret, StringComparison.InvariantCultureIgnoreCase))
+        if(text.Value.ValidForSecret(Secret))
         {
             <div class="card bg-light mb-2">
                 <div class="bd-clipboard">
-                    <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary" @onclick="()=>CopyTextToClipboard(text.Value.Value)">Copy</button>
+                    <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary" 
+                        @onclick="()=>CopyTextToClipboard(text.Value.Text)">
+                        Copy
+                    </button>
                 </div>
                 <code class="p-3 text-body">
-                    <pre>@text.Value.Value</pre>
+                    <pre>@text.Value.Text</pre>
                 </code>
             </div>
         }
@@ -55,15 +66,24 @@ else
 }
 else
 {
-    @foreach (var file in Database.Files.Where(f => f.Value.Secret == Secret))
-    {
-        <div class="card bg-light mb-2">
-            <div class="bd-clipboard">
-                <button type="button" class="btn btn-clipboard btn-sm btn-outline-primary">Copy</button>
-            </div>
-            <code>
-                <pre>@file.Value.Value</pre>
-            </code>
-        </div>
-    }
+    <div class="row">
+        @for (int i = Database.Files.Count - 1; i >= 0 ; i--)
+        {
+            var file = Database.Files.ElementAt(i);
+            if(file.Value.ValidForSecret(Secret))
+            {
+                <div class="col-4">
+                    <div class="card h-100 my-2">
+                        <div class="card-header">@file.Value.Name (@C.BytesToString(file.Value.Size))</div>
+                        <div class="card-body">                        
+                            <code class="text-body">
+                                <pre>@file.Value.Text</pre>
+                            </code>
+                            <a href=@file.Value.Url target="_blank" class="w-100 btn btn-sm btn-outline-success">Download</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
 }

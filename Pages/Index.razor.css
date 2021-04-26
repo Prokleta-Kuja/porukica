@@ -1,5 +1,6 @@
 .bd-clipboard {
     position: relative;
+    z-index: 1;
 }
 
 .btn-clipboard {

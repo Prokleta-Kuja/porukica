@@ -15,7 +15,7 @@ namespace porukica.Jobs
                 return;
 
             var message = Database.Files[id];
-            var fi = new FileInfo(message.Value);
+            var fi = new FileInfo(message.Path);
 
             fi.Directory.Delete(true);
             Database.Files.Remove(id);
