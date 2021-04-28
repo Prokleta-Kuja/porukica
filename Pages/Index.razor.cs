@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
 using porukica.Jobs;
 using porukica.Models;
@@ -16,11 +17,14 @@ namespace porukica.Pages
     {
         [Inject] ISchedulerFactory Q { get; set; }
         [Inject] IJSRuntime JS { get; set; }
+        [Inject] IOptions<Settings> Config { get; set; }
         ElementReference TextInput { get; set; }
+        string Error { get; set; }
         bool TextForm { get; set; } = true;
         string Secret { get; set; }
         string Text { get; set; }
         int Time { get; set; } = 3;
+        string Authorization { get; set; }
         IBrowserFile File { get; set; }
         double UploadProgress { get; set; } = -1;
         CancellationTokenSource cts;
@@ -33,21 +37,33 @@ namespace porukica.Pages
         }
         private async Task Post(TimeType type)
         {
+            Error = string.Empty;
             Time = Math.Abs(Time);
-            var ts =
-                type == TimeType.Minutes ? TimeSpan.FromMinutes(Time > 1440 ? 1440 : Time) :
-                type == TimeType.Hours ? TimeSpan.FromHours(Time > 24 ? 24 : Time) :
-                TimeSpan.FromDays(Time > 1 ? 1 : Time);
+            var ts = type == TimeType.Minutes
+                ? TimeSpan.FromMinutes(Time)
+                : type == TimeType.Hours
+                    ? TimeSpan.FromHours(Time)
+                    : TimeSpan.FromDays(Time);
+
+            if (!Config.Value.ValidTimeout(ts))
+            {
+                Error = $"Max timeout exceeded ({Config.Value.MaxTimeout})";
+                return;
+            }
 
             if (TextForm)
                 await AddText(ts);
             else
                 await AddFile(ts);
-
-            Text = null;
         }
         private async Task AddText(TimeSpan ts)
         {
+            if (!Config.Value.ValidAuthorizationText(Authorization))
+            {
+                Error = "Not Allowed";
+                return;
+            }
+
             var scheduler = await Q.GetScheduler();
             var key = Guid.NewGuid().ToString();
             var jobData = CreateJobData(key);
@@ -58,9 +74,22 @@ namespace porukica.Pages
 
             var job = JobBuilder.Create<TextJob>().SetJobData(jobData).Build();
             await scheduler.ScheduleJob(job, trigger);
+
+            Text = null;
         }
         private async Task AddFile(TimeSpan ts)
         {
+            if (!Config.Value.ValidAuthorizationFile(Authorization))
+            {
+                Error = "Not Allowed";
+                return;
+            }
+            if (Config.Value.MaxFileSize < File.Size)
+            {
+                Error = $"Max file size exceeded ({C.BytesToString(Config.Value.MaxFileSize)})";
+                return;
+            }
+
             cts?.Cancel();
             cts = new CancellationTokenSource();
 
@@ -70,14 +99,14 @@ namespace porukica.Pages
             var fi = new FileInfo(fileName);
 
             using var local = fi.OpenWrite();
-            using var remote = File.OpenReadStream(maxAllowedSize: C.MAX_FILE_SIZE);
+            using var remote = File.OpenReadStream(maxAllowedSize: Config.Value.MaxFileSize);
 
             var success = false;
             int bytesRead;
             var totalRead = 0d;
             var totalSize = File.Size;
 
-            var buffer = new byte[C.UPLOAD_BUFFER_SIZE];
+            var buffer = new byte[Config.Value.BufferSize];
             var memory = new Memory<byte>(buffer);
             try
             {
@@ -123,6 +152,7 @@ namespace porukica.Pages
 
             UploadProgress = -1;
             cts = null;
+            Text = null;
         }
         private async Task CopyTextToClipboard(string text) => await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
         private void CancelUpload()

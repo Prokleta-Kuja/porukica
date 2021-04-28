@@ -1,5 +1,12 @@
 @page "/"
 
+@if(!string.IsNullOrWhiteSpace(Error))
+{
+    <div class="alert alert-danger my-2" role="alert">@Error</div>
+}
+
+<input type=password placeholder="Authorization" @bind=Authorization class="my-2 form-control">
+
 <div class="row my-4">
     <div class="col">
         <button class="w-100 btn @(TextForm ? "btn-success" : "btn-outline-success")" type="button" @onclick="()=>TextForm = true">Text</button>
@@ -16,21 +23,20 @@
         {
             var isUploading = UploadProgress > -1;
             var progressClass = isUploading ? "" : "d-none";
-            var inputClass = isUploading ? "d-none" : "d-block";
-            inputClass += " mb-2 form-control form-control-lg";
+            var uploadClass = isUploading ? "d-none" : "d-block";
 
             <div class="progress mb-2 @progressClass" style="height: 40px;">
-                <div class="progress-bar" role="progressbar" style="width: @UploadProgress.ToString()%;">@UploadProgress %</div>
+                <div class="progress-bar progress-bar-striped bg-success" role="progressbar" style="width: @UploadProgress.ToString()%;">@UploadProgress %</div>
             </div>
             <button type=button class="btn btn-danger w-100 mb-2 @progressClass" @onclick=CancelUpload>Cancel</button>
-            <InputFile class=@inputClass OnChange=FileSelected />
+            <div class=@uploadClass>
+                <InputFile class="mb-2 form-control" OnChange=FileSelected />
+            </div>
         }
-        
-        <button type="button" class="btn btn-primary w-100" @onclick=StateHasChanged>Refresh</button>
     </div>
     <div class="col-3">
         <div class="mb-3">
-            <input type=password placeholder="Shared secret" @bind=Secret class="form-control">
+            <input type=text placeholder="Shared secret" @bind=Secret class="form-control">
         </div>
         <div class="mb-3">
             <input type=number min=1 placeholder="N" @bind=Time class="form-control">

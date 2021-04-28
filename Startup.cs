@@ -23,6 +23,8 @@ namespace porukica
             services.AddQuartz(q => q.UseMicrosoftDependencyInjectionJobFactory());
             services.AddQuartzServer();
 
+            services.Configure<Settings>(Configuration);
+
             services.AddRazorPages();
             services.AddServerSideBlazor();
         }
