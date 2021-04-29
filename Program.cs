@@ -12,7 +12,8 @@ namespace porukica
             // Cleanup all uploads on startup and ensure folder is created
             var uploads = new DirectoryInfo(C.UPLOAD_DIR);
             if (uploads.Exists)
-                uploads.Delete(true);
+                foreach (var folder in uploads.GetDirectories())
+                    folder.Delete(true);
 
             uploads.Create();
 

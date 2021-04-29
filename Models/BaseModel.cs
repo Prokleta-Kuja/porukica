@@ -12,15 +12,12 @@ namespace porukica.Models
 
         public DateTime Created { get; set; }
         public string Secret { get; set; }
-        public bool ValidForSecret(string secret)
+        public bool ValidForSecret(string providedSecret)
         {
-            if (string.IsNullOrWhiteSpace(secret))
+            if (string.IsNullOrWhiteSpace(Secret))
                 return true;
 
-            if (Secret.Equals(secret, StringComparison.InvariantCultureIgnoreCase))
-                return true;
-
-            return false;
+            return Secret.Equals(providedSecret);
         }
     }
 }

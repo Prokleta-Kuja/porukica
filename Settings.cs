@@ -10,7 +10,7 @@ namespace porukica
         public int? MAX_TIMEOUT_M { get; set; }
         public int? MAX_TIMEOUT_S { get; set; }
         public int MAX_FILE_SIZE_MB { get; set; } = 1;
-        public int UPLOAD_BUFFER_SIZE_KB { get; set; } = 16;
+        public int UPLOAD_BUFFER_SIZE_KB { get; set; } = 20;
 
         public bool ValidAuthorizationText(string auth)
             => string.IsNullOrWhiteSpace(AUTHORIZATION_TEXT) || AUTHORIZATION_TEXT.Equals(auth);

@@ -1,7 +1,9 @@
+using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Quartz;
 
@@ -42,6 +44,14 @@ namespace porukica
             }
 
             app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(
+                    Path.Combine(env.ContentRootPath, C.UPLOAD_DIR)),
+                RequestPath = C.DOWNLOAD_DIR,
+                ServeUnknownFileTypes = true,
+                DefaultContentType = "text/plain",
+            });
 
             app.UseRouting();
 

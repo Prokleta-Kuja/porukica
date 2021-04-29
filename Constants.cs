@@ -4,8 +4,8 @@ namespace porukica
 {
     public static class C
     {
-        public const string UPLOAD_DIR = "wwwroot/uploads";
-        public const string DOWNLOAD_DIR = "uploads";
+        public const string UPLOAD_DIR = "uploads";
+        public const string DOWNLOAD_DIR = "/uploads";
 
         public static string BytesToString(long byteCount)
         {
