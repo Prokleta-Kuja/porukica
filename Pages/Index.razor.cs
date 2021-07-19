@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
@@ -107,12 +108,12 @@ namespace porukica.Pages
             var totalSize = File.Size;
 
             var buffer = new byte[Config.Value.BufferSize];
-            var memory = new Memory<byte>(buffer);
             try
             {
-                while ((bytesRead = await remote.ReadAsync(memory, cts.Token)) != 0)
+                //await remote.CopyToAsync(local);
+                while ((bytesRead = await remote.ReadAsync(buffer, 0, buffer.Length, cts.Token)) != 0)
                 {
-                    await local.WriteAsync(memory, cts.Token);
+                    local.Write(buffer, 0, bytesRead);
                     totalRead += bytesRead;
                     var complete = totalRead / totalSize;
                     var completePercent = Math.Floor(complete * 100);
@@ -122,6 +123,7 @@ namespace porukica.Pages
                         UploadProgress = completePercent;
                         StateHasChanged();
                     }
+
                 }
 
                 success = true;
@@ -142,6 +144,13 @@ namespace porukica.Pages
 
                 var message = new FileModel(Secret, Text, fi);
                 message.Size = totalSize;
+
+                using var md5 = MD5.Create();
+                using var stream = fi.OpenRead();
+                var hash = md5.ComputeHash(stream);
+                foreach (byte b in hash)
+                    message.Hash += b.ToString("x2");
+
                 Database.Files.Add(key, message);
 
                 var job = JobBuilder.Create<FileJob>().SetJobData(jobData).Build();
