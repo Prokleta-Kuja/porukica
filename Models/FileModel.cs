@@ -15,5 +15,6 @@ namespace porukica.Models
         public string Url { get; set; }
         public string Name { get; set; }
         public long Size { get; set; }
+        public string Hash { get; set; }
     }
 }

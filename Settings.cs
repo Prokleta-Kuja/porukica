@@ -22,7 +22,7 @@ namespace porukica
                 : MAX_TIMEOUT_M.HasValue
                     ? TimeSpan.FromMinutes(MAX_TIMEOUT_M.Value)
                     : TimeSpan.FromHours(MAX_TIMEOUT_H);
-        public long MaxFileSize => MAX_FILE_SIZE_MB * 1024 * 1024;
-        public long BufferSize => UPLOAD_BUFFER_SIZE_KB * 1024;
+        public long MaxFileSize => MAX_FILE_SIZE_MB * 1024L * 1024L;
+        public long BufferSize => UPLOAD_BUFFER_SIZE_KB * 1024L;
     }
 }

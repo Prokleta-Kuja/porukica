@@ -1,5 +1,6 @@
 using System.IO;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,12 @@ namespace porukica
 
             services.AddRazorPages();
             services.AddServerSideBlazor();
+            services.Configure<RemoteBrowserFileStreamOptions>(o =>
+            {
+                //o.MaxBufferSize = 1024 * 1024; // default 1024kb
+                // Breaks when over 20kb
+                //o.MaxSegmentSize = 64 * 1024;  // default 20kb
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -57,7 +64,10 @@ namespace porukica
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapBlazorHub();
+                endpoints.MapBlazorHub(o =>
+                {
+                    // o.TransportMaxBufferSize = o.ApplicationMaxBufferSize = 1024 * 1024;
+                });
                 endpoints.MapFallbackToPage("/_Host");
             });
         }
