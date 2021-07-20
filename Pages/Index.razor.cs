@@ -36,6 +36,7 @@ namespace porukica.Pages
 
             await TextInput.FocusAsync();
         }
+        protected void Refresh() => StateHasChanged();
         private async Task Post(TimeType type)
         {
             Error = string.Empty;
