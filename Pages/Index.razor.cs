@@ -14,11 +14,13 @@ using Quartz;
 
 namespace porukica.Pages
 {
-    public partial class Index
+    public partial class Index : IAsyncDisposable
     {
         [Inject] ISchedulerFactory Q { get; set; }
         [Inject] IJSRuntime JS { get; set; }
         [Inject] IOptions<Settings> Config { get; set; }
+        IJSObjectReference module;
+        DotNetObjectReference<Index> objRef;
         ElementReference TextInput { get; set; }
         string Error { get; set; }
         bool TextForm { get; set; } = true;
@@ -28,13 +30,20 @@ namespace porukica.Pages
         string Authorization { get; set; }
         IBrowserFile File { get; set; }
         double UploadProgress { get; set; } = -1;
-        CancellationTokenSource cts;
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (!firstRender)
                 return;
 
             await TextInput.FocusAsync();
+            objRef = DotNetObjectReference.Create(this);
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "/js/file.js");
+        }
+        async ValueTask IAsyncDisposable.DisposeAsync()
+        {
+            objRef?.Dispose();
+            if (module is not null)
+                await module.DisposeAsync();
         }
         protected void Refresh() => StateHasChanged();
         private async Task Post(TimeType type)
@@ -92,59 +101,49 @@ namespace porukica.Pages
                 return;
             }
 
-            cts?.Cancel();
-            cts = new CancellationTokenSource();
-
             var key = Guid.NewGuid().ToString();
             var di = CreateFileDir(key);
             var fileName = Path.Combine(di.FullName, File.Name);
             var fi = new FileInfo(fileName);
 
-            using var local = fi.OpenWrite();
-            using var remote = File.OpenReadStream(maxAllowedSize: Config.Value.MaxFileSize);
+            // Schedule removal of upload state
+            var timeout = TimeSpan.FromMinutes(Config.Value.UPLOAD_TIMEOUT_M);
+            var scheduler = await Q.GetScheduler();
+            var jobData = CreateJobData(key);
+            var trigger = TriggerBuilder.Create().StartAt(DateTimeOffset.UtcNow.Add(timeout)).Build();
 
-            var success = false;
-            int bytesRead;
-            var totalRead = 0d;
-            var totalSize = File.Size;
+            var upload = new UploadModel(ts, fi);
+            upload.Size = File.Size;
 
-            var buffer = new byte[Config.Value.BufferSize];
-            try
+            Database.Uploads.Add(key, upload);
+
+            var job = JobBuilder.Create<UploadJob>().SetJobData(jobData).Build();
+            await scheduler.ScheduleJob(job, trigger);
+
+            await module.InvokeVoidAsync("start", objRef, key);
+        }
+        [JSInvokable]
+        public async Task UpdateProgress(string key, double complete)
+        {
+            if (complete != 100)
+                UploadProgress = complete;
+            else
             {
-                //await remote.CopyToAsync(local);
-                while ((bytesRead = await remote.ReadAsync(buffer, 0, buffer.Length, cts.Token)) != 0)
-                {
-                    local.Write(buffer, 0, bytesRead);
-                    totalRead += bytesRead;
-                    var complete = totalRead / totalSize;
-                    var completePercent = Math.Floor(complete * 100);
+                if (!Database.Uploads.TryGetValue(key, out var upload))
+                    return;
 
-                    if (completePercent > UploadProgress)
-                    {
-                        UploadProgress = completePercent;
-                        StateHasChanged();
-                    }
+                UploadProgress = 100;
+                StateHasChanged();
 
-                }
-
-                success = true;
-            }
-            catch (OperationCanceledException) { }
-            finally
-            {
-                await local.FlushAsync();
-                remote.Close();
-                local.Close();
-            }
-
-            if (success)
-            {
                 var scheduler = await Q.GetScheduler();
                 var jobData = CreateJobData(key);
-                var trigger = TriggerBuilder.Create().StartAt(DateTimeOffset.UtcNow.Add(ts)).Build();
+                var trigger = TriggerBuilder.Create().StartAt(DateTimeOffset.UtcNow.Add(upload.ExpireAfter)).Build();
 
+                var fi = new FileInfo(upload.Path);
+                if (!fi.Exists)
+                    return;
                 var message = new FileModel(Secret, Text, fi);
-                message.Size = totalSize;
+                message.Size = fi.Length;
 
                 using var md5 = MD5.Create();
                 using var stream = fi.OpenRead();
@@ -156,25 +155,21 @@ namespace porukica.Pages
 
                 var job = JobBuilder.Create<FileJob>().SetJobData(jobData).Build();
                 await scheduler.ScheduleJob(job, trigger);
-            }
-            else
-                di.Delete(true);
 
-            UploadProgress = -1;
-            cts = null;
-            Text = null;
+                UploadProgress = -1;
+                Text = null;
+            }
+
+            StateHasChanged();
         }
         private async Task CopyTextToClipboard(string text) => await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
-        private void CancelUpload()
+        private async Task CancelUpload()
         {
-            cts?.Cancel();
+            await module.InvokeVoidAsync("cancel");
             UploadProgress = -1;
+            StateHasChanged();
         }
-
-        private void FileSelected(InputFileChangeEventArgs e)
-        {
-            File = e.File;
-        }
+        private void FileSelected(InputFileChangeEventArgs e) => File = e.File;
         private static JobDataMap CreateJobData(string key)
         {
             var kv = new Dictionary<string, string> { { "Id", key } };

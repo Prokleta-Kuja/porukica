@@ -28,6 +28,7 @@ namespace porukica
 
             services.Configure<Settings>(Configuration);
 
+            services.AddControllers();
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.Configure<RemoteBrowserFileStreamOptions>(o =>
@@ -64,6 +65,7 @@ namespace porukica
 
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapControllers();
                 endpoints.MapBlazorHub(o =>
                 {
                     // o.TransportMaxBufferSize = o.ApplicationMaxBufferSize = 1024 * 1024;

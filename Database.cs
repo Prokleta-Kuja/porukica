@@ -7,5 +7,6 @@ namespace porukica
     {
         public static readonly Dictionary<string, TextModel> Texts = new();
         public static readonly Dictionary<string, FileModel> Files = new();
+        public static readonly Dictionary<string, UploadModel> Uploads = new();
     }
 }

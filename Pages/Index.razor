@@ -29,11 +29,11 @@
             var uploadClass = isUploading ? "d-none" : "d-block";
 
             <div class="progress mb-2 @progressClass" style="height: 40px;">
-                <div class="progress-bar progress-bar-striped bg-success" role="progressbar" style="width: @UploadProgress.ToString()%;">@UploadProgress %</div>
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: @UploadProgress.ToString()%;">@UploadProgress.ToString("N2") %</div>
             </div>
             <button type=button class="btn btn-danger w-100 mb-2 @progressClass" @onclick=CancelUpload>Cancel</button>
             <div class=@uploadClass>
-                <InputFile class="mb-2 form-control" OnChange=FileSelected />
+                <InputFile id=upload-file class="mb-2 form-control" OnChange=FileSelected />
             </div>
         }
     </div>
